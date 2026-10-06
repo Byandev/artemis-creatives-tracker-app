@@ -29,9 +29,9 @@ export function WebBadge() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: Spacing.five,
+    padding: Spacing[8],
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing[2],
   },
   versionText: {
     textAlign: 'center',

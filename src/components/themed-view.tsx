@@ -1,14 +1,17 @@
 import { View, type ViewProps } from 'react-native';
 
-import { ThemeColor } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+const SURFACE_CLASSES = {
+  background: 'bg-background',
+  surface: 'bg-surface',
+  badge: 'bg-badge',
+  badgeActive: 'bg-badge-active',
+  rowHover: 'bg-row-hover',
+} as const;
 
 export type ThemedViewProps = ViewProps & {
-  type?: ThemeColor;
+  type?: keyof typeof SURFACE_CLASSES;
 };
 
-export function ThemedView({ style, type, ...otherProps }: ThemedViewProps) {
-  const theme = useTheme();
-
-  return <View style={[{ backgroundColor: theme[type ?? 'background'] }, style]} {...otherProps} />;
+export function ThemedView({ type = 'background', className, ...otherProps }: ThemedViewProps) {
+  return <View className={`${SURFACE_CLASSES[type]} ${className ?? ''}`} {...otherProps} />;
 }

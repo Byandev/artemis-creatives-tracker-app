@@ -1,5 +1,117 @@
-:root {
-  --font-display: Geist_400Regular, ui-sans-serif, system-ui, sans-serif;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+@import 'tailwindcss';
+@import 'uniwind';
+
+/*
+ * Artemis design tokens for Tailwind (via Uniwind).
+ * Keep in sync with src/constants/theme.ts, which JS-only consumers use
+ * (navigation theme, native tabs).
+ */
+
+@theme {
+  /* Geist: one family per weight (React Native can't synthesize weights). */
+  --font-sans: 'Geist_400Regular';
+  --font-sans-medium: 'Geist_500Medium';
+  --font-sans-semibold: 'Geist_600SemiBold';
+  --font-sans-bold: 'Geist_700Bold';
+
+  /* Type scale */
+  --text-wordmark: 36px;
+  --text-wordmark--line-height: 40px;
+  --text-title: 17px;
+  --text-title--line-height: 24px;
+  --text-input: 15px;
+  --text-input--line-height: 20px;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-label: 13px;
+  --text-label--line-height: 16px;
+  --text-meta: 12px;
+  --text-meta--line-height: 16px;
+  --text-caption: 11px;
+  --text-caption--line-height: 16px;
+
+  /* Letter spacing (em values from the spec, converted to px) */
+  --tracking-wordmark: 5.76px; /* 0.16em @ 36 */
+  --tracking-title: -0.17px; /* -0.01em @ 17 */
+  --tracking-eyebrow: 1.54px; /* 0.14em @ 11 */
+  --tracking-section: 0.88px; /* 0.08em @ 11 */
+
+  /* Corner radius */
+  --radius-sm: 4px; /* status labels, badges, segments */
+  --radius-md: 6px; /* inputs, buttons, thumbnails */
+  --radius-lg: 10px; /* logo mark */
+}
+
+@layer theme {
+  :root {
+    @variant light {
+      --color-background: #ffffff;
+      --color-surface: #ffffff;
+      --color-bottom-nav: #ffffff;
+      --color-foreground: #15191a;
+      --color-muted: #5c6461;
+      --color-placeholder: #8a918e;
+      --color-chevron: #8a918e;
+      --color-border: #e3e7e5;
+      --color-input-border: #d5dad8;
+      --color-divider: #eef1ef;
+      --color-row-hover: #f6f8f7;
+      --color-primary: #047857;
+      --color-primary-pressed: #065f46;
+      --color-button: #047857;
+      --color-button-pressed: #065f46;
+      --color-on-button: #ffffff;
+      --color-badge: #f1f3f2;
+      --color-badge-active: #e6f4ee;
+      --color-focus-ring: rgba(4, 120, 87, 0.2);
+
+      --color-pending: #a15c07;
+      --color-pending-fill: #fff8eb;
+      --color-pending-border: #f3ddb0;
+      --color-pending-dot: #d97706;
+      --color-approved: #047857;
+      --color-approved-fill: #eefbf5;
+      --color-approved-border: #bfe8d6;
+      --color-approved-dot: #10b981;
+      --color-rejected: #b42318;
+      --color-rejected-fill: #fef3f2;
+      --color-rejected-border: #f5c9c4;
+      --color-rejected-dot: #e5484d;
+    }
+
+    @variant dark {
+      --color-background: #121615;
+      --color-surface: #1a1f1d;
+      --color-bottom-nav: #151a18;
+      --color-foreground: #ecefed;
+      --color-muted: #9ba4a0;
+      --color-placeholder: #7a8380;
+      --color-chevron: #6e7774;
+      --color-border: #2a302e;
+      --color-input-border: #2e3532;
+      --color-divider: #1f2523;
+      --color-row-hover: #1a1f1d;
+      --color-primary: #34d399;
+      --color-primary-pressed: #10b981;
+      --color-button: #10b981;
+      --color-button-pressed: #059669;
+      --color-on-button: #04241a;
+      --color-badge: #1f2523;
+      --color-badge-active: #10261e;
+      --color-focus-ring: rgba(52, 211, 153, 0.25);
+
+      --color-pending: #f5b84a;
+      --color-pending-fill: #2a2112;
+      --color-pending-border: #4a3815;
+      --color-pending-dot: #f59e0b;
+      --color-approved: #34d399;
+      --color-approved-fill: #10261e;
+      --color-approved-border: #1d4535;
+      --color-approved-dot: #34d399;
+      --color-rejected: #f38b85;
+      --color-rejected-fill: #2b1716;
+      --color-rejected-border: #4d2522;
+      --color-rejected-dot: #f06a63;
+    }
+  }
 }

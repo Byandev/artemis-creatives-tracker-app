@@ -1,0 +1,101 @@
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
+const TIMEOUT_MS = 15_000;
+
+// ngrok's free tier answers browser-like requests with an HTML warning page unless this is set.
+const TUNNEL_HEADERS: Record<string, string> = BASE_URL?.includes('ngrok')
+  ? { 'ngrok-skip-browser-warning': 'true' }
+  : {};
+
+export type User = { id: number; name: string; email: string };
+
+/** A failed API call. `status` is 0 when the request never got a response. */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly body: Record<string, unknown> = {},
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+
+  /** First message per field from a Laravel 422 response. */
+  get fieldErrors(): Record<string, string> {
+    const errors = this.body.errors as Record<string, string[]> | undefined;
+    return Object.fromEntries(Object.entries(errors ?? {}).map(([field, messages]) => [field, messages[0]]));
+  }
+}
+
+type RequestOptions = {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  body?: unknown;
+  token?: string | null;
+};
+
+export async function apiRequest<T>(path: string, { method = 'GET', body, token }: RequestOptions = {}): Promise<T> {
+  if (!BASE_URL) {
+    throw new ApiError('EXPO_PUBLIC_API_URL is not set. Add it to .env and restart Expo.', 0);
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  const url = `${BASE_URL}/api/v1/creatives-tracker${path}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...TUNNEL_HEADERS,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (__DEV__) console.warn(`[api] ${method} ${url} failed:`, error);
+    throw new ApiError("Can't reach Artemis. Check your connection and try again.", 0);
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  // Dev-only trace. Never logs the request body, which may hold a password.
+  if (__DEV__) console.log(`[api] ${method} ${url} → ${response.status}`, response.ok ? '' : data);
+
+  // A 2xx that isn't JSON came from a proxy or error page, not the API.
+  if (response.ok && data === null) {
+    throw new ApiError('Unexpected response from Artemis. Try again.', response.status);
+  }
+
+  if (!response.ok || data === null) {
+    const body = data ?? {};
+    const message =
+      (typeof body.error === 'string' && body.error) ||
+      (typeof body.message === 'string' && body.message) ||
+      (response.status === 429 ? 'Too many attempts. Wait a minute and try again.' : 'Something went wrong. Try again.');
+    throw new ApiError(message, response.status, body);
+  }
+
+  return data as T;
+}
+
+// Endpoints
+
+export type LoginInput = {
+  email: string;
+  password: string;
+  device_name?: string;
+  code?: string;
+  recovery_code?: string;
+};
+
+export type LoginResponse = { token: string; token_type: 'Bearer'; user: User };
+
+export const authApi = {
+  login: (input: LoginInput) => apiRequest<LoginResponse>('/login', { method: 'POST', body: input }),
+  me: (token: string) => apiRequest<{ user: User }>('/me', { token }),
+  logout: (token: string) => apiRequest<{ message: string }>('/logout', { method: 'POST', token }),
+};

@@ -40,7 +40,7 @@ export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps
       <ThemedView
         type={isFocused ? 'badgeActive' : 'badge'}
         style={styles.tabButtonView}>
-        <ThemedText type="body" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        <ThemedText type="body" tone={isFocused ? 'default' : 'muted'}>
           {children}
         </ThemedText>
       </ThemedView>

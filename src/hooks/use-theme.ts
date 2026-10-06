@@ -1,9 +1,10 @@
 /**
- * Learn more about light and dark modes:
+ * Prefer Tailwind classes for styling. These hooks are for JS-only consumers
+ * (navigation theme, native tabs, third-party props that need a color value).
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { Colors, type ColorScheme, StatusColors } from '@/constants/theme';
+import { Colors, type ColorScheme } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function useColorSchemeName(): ColorScheme {
@@ -13,8 +14,4 @@ export function useColorSchemeName(): ColorScheme {
 
 export function useTheme() {
   return Colors[useColorSchemeName()];
-}
-
-export function useStatusColors() {
-  return StatusColors[useColorSchemeName()];
 }

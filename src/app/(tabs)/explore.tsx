@@ -40,7 +40,7 @@ export default function TabTwoScreen() {
       <ThemedView style={styles.container}>
         <ThemedView style={styles.titleContainer}>
           <ThemedText type="pageTitle">Explore</ThemedText>
-          <ThemedText style={styles.centerText} themeColor="textSecondary">
+          <ThemedText style={styles.centerText} tone="muted">
             This starter app includes example{'\n'}code to help you get started.
           </ThemedText>
 
@@ -69,7 +69,7 @@ export default function TabTwoScreen() {
               the tab navigator.
             </ThemedText>
             <ExternalLink href="https://docs.expo.dev/router/introduction">
-              <ThemedText type="label" themeColor="primary">Learn more</ThemedText>
+              <ThemedText type="label" tone="primary">Learn more</ThemedText>
             </ExternalLink>
           </Collapsible>
 
@@ -95,7 +95,7 @@ export default function TabTwoScreen() {
             </ThemedText>
             <Image source={require('@/assets/images/react-logo.png')} style={styles.imageReact} />
             <ExternalLink href="https://reactnative.dev/docs/images">
-              <ThemedText type="label" themeColor="primary">Learn more</ThemedText>
+              <ThemedText type="label" tone="primary">Learn more</ThemedText>
             </ExternalLink>
           </Collapsible>
 
@@ -106,7 +106,7 @@ export default function TabTwoScreen() {
               user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
             </ThemedText>
             <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-              <ThemedText type="label" themeColor="primary">Learn more</ThemedText>
+              <ThemedText type="label" tone="primary">Learn more</ThemedText>
             </ExternalLink>
           </Collapsible>
 

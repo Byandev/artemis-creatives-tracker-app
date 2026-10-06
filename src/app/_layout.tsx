@@ -1,3 +1,5 @@
+import '@/global.css';
+
 import {
   Geist_400Regular,
   Geist_500Medium,
@@ -5,13 +7,14 @@ import {
   Geist_700Bold,
   useFonts,
 } from '@expo-google-fonts/geist';
-import { DarkTheme, DefaultTheme, ThemeProvider, type Theme } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import { Colors, FontFamily } from '@/constants/theme';
 import { useColorSchemeName } from '@/hooks/use-theme';
+import { SessionProvider, useSession } from '@/providers/session';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,7 +40,30 @@ function navigationTheme(scheme: 'light' | 'dark'): Theme {
   };
 }
 
-export default function TabLayout() {
+function RootNavigator() {
+  const { isLoading, token } = useSession();
+
+  // Keep the native splash up until the saved session has been read (AnimatedSplashOverlay hides it).
+  if (isLoading) {
+    return null;
+  }
+
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={!token}>
+          <Stack.Screen name="login" />
+        </Stack.Protected>
+        <Stack.Protected guard={!!token}>
+          <Stack.Screen name="(tabs)" />
+        </Stack.Protected>
+      </Stack>
+      <AnimatedSplashOverlay />
+    </>
+  );
+}
+
+export default function RootLayout() {
   const scheme = useColorSchemeName();
   const [fontsLoaded, fontError] = useFonts({
     Geist_400Regular,
@@ -46,15 +72,17 @@ export default function TabLayout() {
     Geist_700Bold,
   });
 
-  // Keep the native splash up until Geist is ready (AnimatedSplashOverlay hides it).
+  // Keep the native splash up until Geist is ready.
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
     <ThemeProvider value={navigationTheme(scheme)}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+      <SessionProvider>
+        <StatusBar style="auto" />
+        <RootNavigator />
+      </SessionProvider>
     </ThemeProvider>
   );
 }

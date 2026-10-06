@@ -16,7 +16,7 @@ export function HintRow({ title = 'Try editing', hint = 'app/index.tsx' }: HintR
     <View style={styles.stepRow}>
       <ThemedText type="body">{title}</ThemedText>
       <ThemedView type="badgeActive" style={styles.codeSnippet}>
-        <ThemedText themeColor="textSecondary">{hint}</ThemedText>
+        <ThemedText tone="muted">{hint}</ThemedText>
       </ThemedView>
     </View>
   );

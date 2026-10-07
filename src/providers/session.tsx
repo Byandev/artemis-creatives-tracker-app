@@ -1,5 +1,5 @@
 import * as Device from 'expo-device';
-import { createContext, use, useEffect, useState, type PropsWithChildren } from 'react';
+import { createContext, use, useCallback, useEffect, useState, type PropsWithChildren } from 'react';
 
 import { ApiError, authApi, type User } from '@/lib/api';
 import { clearSession, loadSession, saveSession } from '@/lib/auth-storage';
@@ -62,7 +62,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  async function signIn({ email, password, code, recoveryCode }: SignInInput) {
+  // Stable callbacks: screens use these in effect dependencies.
+  const signIn = useCallback(async ({ email, password, code, recoveryCode }: SignInInput) => {
     const response = await authApi.login({
       email,
       password,
@@ -73,9 +74,9 @@ export function SessionProvider({ children }: PropsWithChildren) {
     await saveSession({ token: response.token, user: response.user });
     setToken(response.token);
     setUser(response.user);
-  }
+  }, []);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     const current = token;
     await clearSession();
     setToken(null);
@@ -84,7 +85,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     if (current) {
       await authApi.logout(current).catch(() => {});
     }
-  }
+  }, [token]);
 
   return (
     <SessionContext value={{ isLoading, token, user, signIn, signOut }}>{children}</SessionContext>

@@ -1,3 +1,5 @@
+import type { AssignedCreative } from '@/lib/creatives';
+
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
 const TIMEOUT_MS = 15_000;
 
@@ -93,6 +95,46 @@ export type LoginInput = {
 };
 
 export type LoginResponse = { token: string; token_type: 'Bearer'; user: User };
+
+export type AssignedCreativesParams = {
+  search?: string;
+  format?: 'all' | 'image' | 'video';
+  /** Workspace slug */
+  workspace?: string;
+  perPage?: number;
+  /** `next_cursor` from the previous page */
+  cursor?: string | null;
+};
+
+/** Laravel cursor pagination, plus the total number of matching creatives. */
+export type AssignedCreativesPage = {
+  data: AssignedCreative[];
+  next_cursor: string | null;
+  per_page: number;
+  total: number;
+};
+
+function toQuery(params: Record<string, string | number | null | undefined>) {
+  const query = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&');
+  return query ? `?${query}` : '';
+}
+
+export const creativesApi = {
+  assigned: (token: string, { search, format, workspace, perPage, cursor }: AssignedCreativesParams = {}) =>
+    apiRequest<AssignedCreativesPage>(
+      `/creatives/assigned${toQuery({
+        search: search?.trim(),
+        format: format === 'all' ? undefined : format,
+        workspace,
+        per_page: perPage,
+        cursor,
+      })}`,
+      { token },
+    ),
+};
 
 export const authApi = {
   login: (input: LoginInput) => apiRequest<LoginResponse>('/login', { method: 'POST', body: input }),

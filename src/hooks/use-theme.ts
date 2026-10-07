@@ -1,15 +1,17 @@
 /**
  * Prefer Tailwind classes for styling. These hooks are for JS-only consumers
- * (navigation theme, native tabs, third-party props that need a color value).
- * https://docs.expo.dev/guides/color-schemes/
+ * (navigation theme, refresh spinner, third-party props that need a color value).
+ * Uniwind owns the active theme (light, dark, or following the device), so classes
+ * and these values always agree.
  */
 
+import { useUniwind } from 'uniwind';
+
 import { Colors, type ColorScheme } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export function useColorSchemeName(): ColorScheme {
-  const scheme = useColorScheme();
-  return scheme === 'dark' ? 'dark' : 'light';
+  const { theme } = useUniwind();
+  return theme === 'dark' ? 'dark' : 'light';
 }
 
 export function useTheme() {

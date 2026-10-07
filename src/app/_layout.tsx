@@ -10,10 +10,12 @@ import {
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { Colors, FontFamily } from '@/constants/theme';
 import { useColorSchemeName } from '@/hooks/use-theme';
+import { restoreThemePreference } from '@/lib/theme-preference';
 import { SessionProvider, useSession } from '@/providers/session';
 
 SplashScreen.preventAutoHideAsync();
@@ -65,6 +67,12 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const scheme = useColorSchemeName();
+  // Apply the saved light/dark choice before the first frame, so there's no flash.
+  const [themeReady, setThemeReady] = useState(false);
+  useEffect(() => {
+    restoreThemePreference().finally(() => setThemeReady(true));
+  }, []);
+
   const [fontsLoaded, fontError] = useFonts({
     Geist_400Regular,
     Geist_500Medium,
@@ -73,14 +81,14 @@ export default function RootLayout() {
   });
 
   // Keep the native splash up until Geist is ready.
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !themeReady) {
     return null;
   }
 
   return (
     <ThemeProvider value={navigationTheme(scheme)}>
       <SessionProvider>
-        <StatusBar style="auto" />
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <RootNavigator />
       </SessionProvider>
     </ThemeProvider>

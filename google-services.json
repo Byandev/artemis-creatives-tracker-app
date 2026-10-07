@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "971283764904",
+    "project_id": "artemis-creatives-tracker",
+    "storage_bucket": "artemis-creatives-tracker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:971283764904:android:0cb484b170d11c3d6f549d",
+        "android_client_info": {
+          "package_name": "com.neilpatrick.artemiscreativestracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQ6YXP9k62UOtMcVndhKhYuoV0T1_lhqY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

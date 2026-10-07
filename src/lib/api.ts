@@ -63,17 +63,23 @@ export async function apiRequest<T>(path: string, { method = 'GET', body, token 
     clearTimeout(timeout);
   }
 
+  // 204 No Content (e.g. push-token register/delete) is success with no body.
+  if (response.status === 204) {
+    return {} as T;
+  }
+
   const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
   // Dev-only trace. Never logs the request body, which may hold a password.
   if (__DEV__) console.log(`[api] ${method} ${url} → ${response.status}`, response.ok ? '' : data);
 
-  // A 2xx that isn't JSON came from a proxy or error page, not the API.
-  if (response.ok && data === null) {
-    throw new ApiError('Unexpected response from Artemis. Try again.', response.status);
+  // Not JSON at all: a tunnel/proxy page (e.g. an offline Expose or ngrok URL), not the API.
+  // Treat it like no response, so screens show "can't reach" instead of a generic error.
+  if (data === null) {
+    throw new ApiError("Can't reach Artemis. The server address may be offline.", 0, { httpStatus: response.status });
   }
 
-  if (!response.ok || data === null) {
-    const body = data ?? {};
+  if (!response.ok) {
+    const body = data;
     const message =
       (typeof body.error === 'string' && body.error) ||
       (typeof body.message === 'string' && body.message) ||
@@ -134,6 +140,29 @@ export const creativesApi = {
       })}`,
       { token },
     ),
+};
+
+/** Push token registration. Backend contract: docs/push-notifications-backend.md */
+export type PushTokenInput = {
+  token: string;
+  platform: 'ios' | 'android';
+  device_name?: string;
+};
+
+export const notificationsApi = {
+  registerToken: (token: string, input: PushTokenInput) =>
+    apiRequest<unknown>('/push-token', { method: 'POST', body: input, token }),
+  unregisterToken: (token: string, pushToken: string) =>
+    apiRequest<unknown>('/push-token', { method: 'DELETE', body: { token: pushToken }, token }),
+};
+
+/** The daily "creatives waiting" push. `time` is 24-hour "HH:mm" in `timezone` (Asia/Manila). */
+export type DailyReminder = { enabled: boolean; time: string; timezone: string };
+
+export const reminderApi = {
+  get: (token: string) => apiRequest<{ daily_reminder: DailyReminder }>('/reminder-settings', { token }),
+  update: (token: string, input: { enabled: boolean; time: string }) =>
+    apiRequest<{ daily_reminder: DailyReminder }>('/reminder-settings', { method: 'PUT', body: input, token }),
 };
 
 export const authApi = {

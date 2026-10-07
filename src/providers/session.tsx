@@ -3,6 +3,7 @@ import { createContext, use, useCallback, useEffect, useState, type PropsWithChi
 
 import { ApiError, authApi, type User } from '@/lib/api';
 import { clearSession, loadSession, saveSession } from '@/lib/auth-storage';
+import { unregisterPushToken } from '@/lib/notifications';
 
 export type SignInInput = {
   email: string;
@@ -19,6 +20,8 @@ type SessionContextValue = {
   /** Throws ApiError; check `body.two_factor_required` to prompt for a 2FA code. */
   signIn: (input: SignInInput) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Re-fetches the user from GET /me. Signs out on 401; other errors are thrown. */
+  refreshUser: () => Promise<void>;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -81,14 +84,30 @@ export function SessionProvider({ children }: PropsWithChildren) {
     await clearSession();
     setToken(null);
     setUser(null);
-    // Revoke the token server-side; local sign-out already happened if this fails.
+    // Stop pushes to this phone, then revoke the token. Local sign-out already happened if these fail.
     if (current) {
+      await unregisterPushToken(current);
       await authApi.logout(current).catch(() => {});
     }
   }, [token]);
 
+  const refreshUser = useCallback(async () => {
+    if (!token) return;
+    try {
+      const { user: fresh } = await authApi.me(token);
+      setUser(fresh);
+      await saveSession({ token, user: fresh });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        await signOut();
+        return;
+      }
+      throw error;
+    }
+  }, [token, signOut]);
+
   return (
-    <SessionContext value={{ isLoading, token, user, signIn, signOut }}>{children}</SessionContext>
+    <SessionContext value={{ isLoading, token, user, signIn, signOut, refreshUser }}>{children}</SessionContext>
   );
 }
 

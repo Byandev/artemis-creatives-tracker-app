@@ -107,3 +107,24 @@ messages per request. Docs: https://docs.expo.dev/push-notifications/sending-not
 
 Once the app runs as a development build, copy a token from the `creatives_tracker_push_tokens` table
 (or log it in the app) and send a test push from https://expo.dev/notifications.
+
+## 5. Web app (PWA): Web Push
+
+The installed web app can't use Expo push, so it subscribes through the browser's Web Push instead
+(`src/lib/notifications.web.ts`, service worker `public/push-sw.js`). Same notifications, same
+`data`, sent alongside the Expo push by `ReviewerPush` in Artemis.
+
+| Endpoint | Body | Response |
+| --- | --- | --- |
+| `GET /web-push/key` | | `{ "public_key": "<VAPID public key>" }`, or `null` when not configured |
+| `POST /web-push/subscription` | `{ "endpoint", "keys": { "p256dh", "auth" }, "content_encoding" }` | `204`; keyed on `endpoint`, moves to the current user |
+| `DELETE /web-push/subscription` | `{ "endpoint" }` | `204`; only the current user's |
+
+Payload the service worker expects: `{ "title", "body", "data": { "type", ... }, "url": "/" }`.
+
+Server setup, once per environment: `php artisan creatives:web-push-keys`, then put
+`WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY` and `WEB_PUSH_SUBJECT` (a `mailto:` or `https:` URL)
+in `.env`. Changing the keys later cuts off every subscribed browser until it re-subscribes on next launch.
+
+Limits: iPhone/iPad only allow Web Push for an app added to the Home Screen (iOS 16.4+). The
+service worker only ships with the production export (`npm run build:web`), not `expo start`.

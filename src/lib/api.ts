@@ -156,6 +156,22 @@ export const notificationsApi = {
     apiRequest<unknown>('/push-token', { method: 'DELETE', body: { token: pushToken }, token }),
 };
 
+/** A browser's Web Push subscription (`PushSubscription.toJSON()`), for the installed web app. */
+export type WebPushSubscriptionInput = {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  content_encoding?: string;
+};
+
+export const webPushApi = {
+  /** VAPID public key the browser subscribes with; null until the server is set up. */
+  key: (token: string) => apiRequest<{ public_key: string | null }>('/web-push/key', { token }),
+  subscribe: (token: string, input: WebPushSubscriptionInput) =>
+    apiRequest<unknown>('/web-push/subscription', { method: 'POST', body: input, token }),
+  unsubscribe: (token: string, endpoint: string) =>
+    apiRequest<unknown>('/web-push/subscription', { method: 'DELETE', body: { endpoint }, token }),
+};
+
 /** The daily "creatives waiting" push. `time` is 24-hour "HH:mm" in `timezone` (Asia/Manila). */
 export type DailyReminder = { enabled: boolean; time: string; timezone: string };
 

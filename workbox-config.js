@@ -8,4 +8,6 @@ module.exports = {
   skipWaiting: true,
   clientsClaim: true,
   ignoreURLParametersMatching: [/^utm_/, /^fbclid$/],
+  // Push and notification-tap handlers (public/push-sw.js).
+  importScripts: ['push-sw.js'],
 };

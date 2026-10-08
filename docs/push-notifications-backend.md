@@ -1,7 +1,8 @@
 # Push notifications: backend contract
 
-The Creatives Tracker app registers each phone's **Expo push token** with Artemis. Artemis stores
-the tokens per user and sends pushes through Expo's push service when there is something to review.
+The Creatives Tracker app registers each phone's **native device push token** with Artemis: an FCM
+token on Android, an APNs token on iOS. Artemis stores the tokens per user and sends pushes directly
+through FCM / APNs when there is something to review.
 
 The app side is done (`src/lib/notifications.ts`). This document is what the Laravel side needs to match.
 
@@ -16,7 +17,7 @@ It must be idempotent: the same token sent twice is a single row.
 
 ```json
 {
-  "token": "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
+  "token": "<FCM token on Android, APNs token on iOS>",
   "platform": "android",
   "device_name": "Juan's Galaxy S24"
 }
@@ -24,7 +25,7 @@ It must be idempotent: the same token sent twice is a single row.
 
 | Field         | Rules                                                   |
 | ------------- | ------------------------------------------------------- |
-| `token`       | required, string, max 255, starts with `ExponentPushToken[` |
+| `token`       | required, string, max 255                               |
 | `platform`    | required, `ios` or `android`                            |
 | `device_name` | optional, string, max 255                               |
 
@@ -38,7 +39,7 @@ It must be idempotent: the same token sent twice is a single row.
 Called when the user turns notifications off, and on logout (before `/logout` revokes the Sanctum token).
 
 ```json
-{ "token": "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]" }
+{ "token": "<device push token>" }
 ```
 
 - `204` on success, also when the token isn't stored (nothing to delete).
@@ -54,65 +55,101 @@ Suggested table `creatives_tracker_push_tokens`: `id`, `user_id` (FK, cascade on
 When a user is added to a creative's assigned reviewers (and the creative is in a workspace with the
 Creatives module on), send to all of that user's tokens:
 
-```json
-{
-  "to": ["ExponentPushToken[...]"],
-  "title": "New creative to review",
-  "body": "ECOBOOST — UGC 01 · Campaign A",
-  "sound": "default",
-  "priority": "high",
-  "channelId": "reviews",
-  "data": { "type": "creative_assigned", "creative_id": 123 }
-}
-```
+- title: `New creative to review`
+- body: `ECOBOOST — UGC 01 · Campaign A`
+- data: `{ "type": "creative_assigned", "creative_id": 123 }`
+- high priority
 
 ### Daily reminder
 
 Once a day (suggested 9:00 AM Asia/Manila, via the scheduler), for each user with at least one
 creative waiting on their review (the same query as `GET /creatives/assigned`):
 
-```json
-{
-  "to": ["ExponentPushToken[...]"],
-  "title": "Creatives waiting for review",
-  "body": "You have 4 creatives waiting for your review.",
-  "sound": "default",
-  "channelId": "reviews",
-  "data": { "type": "pending_reminder", "count": 4 }
-}
-```
+- title: `Creatives waiting for review`
+- body: `You have 4 creatives waiting for your review.`
+- data: `{ "type": "pending_reminder", "count": 4 }`
+- normal priority
 
 Skip users with nothing pending: no "0 creatives" pushes.
 
-`"priority": "high"` on the assignment push is what makes it arrive within seconds: without it,
-Android may hold the push while the phone is idle (Doze / battery saver) and deliver it later.
-The daily reminder can use the default priority.
+High priority on the assignment push is what makes it arrive within seconds: without it, Android may
+hold the push while the phone is idle (Doze / battery saver) and deliver it later.
 
-The app reads `data.type`. Both types open the Creatives list when tapped. `channelId` must be
-`reviews` (the Android channel the app creates).
+The app reads `data.type`. Both types open the Creatives list when tapped.
 
-## 3. Sending through Expo
+## 3. Sending through FCM and APNs
 
-`POST https://exp.host/--/api/v2/push/send` with `Content-Type: application/json`, up to 100
-messages per request. Docs: https://docs.expo.dev/push-notifications/sending-notifications/
+Pick the service from the token's `platform`. Payload shapes follow
+https://docs.expo.dev/push-notifications/sending-notifications-custom/ so `expo-notifications` in
+the app can read them.
+
+### Android (`platform: android`): FCM HTTP v1
+
+`POST https://fcm.googleapis.com/v1/projects/<firebase-project-id>/messages:send`, authenticated with
+an OAuth token from the Firebase service account JSON (keep the file path in `.env`). One token per request.
+
+Send a **data-only** message (no `notification` block): `expo-notifications` builds the notification
+from these fields. All `data` values must be strings, so the app data goes JSON-encoded in `body`.
+
+```json
+{
+  "message": {
+    "token": "<FCM token>",
+    "android": { "priority": "HIGH" },
+    "data": {
+      "channelId": "reviews",
+      "title": "New creative to review",
+      "message": "ECOBOOST — UGC 01 · Campaign A",
+      "body": "{\"type\":\"creative_assigned\",\"creative_id\":123}"
+    }
+  }
+}
+```
+
+`channelId` must be `reviews` (the Android channel the app creates). Use `"priority": "NORMAL"` for the daily reminder.
+
+- `404 UNREGISTERED` or `400 INVALID_ARGUMENT` on the token: delete that token.
+
+### iOS (`platform: ios`): APNs
+
+HTTP/2 `POST https://api.push.apple.com/3/device/<APNs token>` (`api.sandbox.push.apple.com` for
+development builds), authenticated with a JWT from the APNs auth key (`.p8`, Key ID, Team ID, in `.env`).
+Headers: `apns-topic: <iOS bundle identifier>`, `apns-push-type: alert`, `apns-priority: 10`
+(`5` for the daily reminder).
+
+App data goes as root-level keys next to `aps`:
+
+```json
+{
+  "aps": {
+    "alert": { "title": "New creative to review", "body": "ECOBOOST — UGC 01 · Campaign A" },
+    "sound": "default"
+  },
+  "type": "creative_assigned",
+  "creative_id": 123
+}
+```
+
+- `410` or `400 BadDeviceToken` / `Unregistered`: delete that token.
+
+### Both
 
 - Send from a **queued job**, not in the request that assigned the reviewer. A queue worker
   (`php artisan queue:work` or Horizon) must be running, or the pushes wait in the queue unsent.
-- If a ticket or receipt comes back with `DeviceNotRegistered`, delete that token.
-- If the Expo project has "enhanced push security" turned on, add an
-  `Authorization: Bearer <EXPO_ACCESS_TOKEN>` header (keep it in `.env`).
-- The `laravel-notification-channels/expo` package can do the sending, or a small HTTP client call.
+- `laravel-notification-channels/fcm` and `laravel-notification-channels/apn` can do the sending,
+  or a small HTTP client call per service.
 
 ## 4. Testing without the backend
 
-Once the app runs as a development build, copy a token from the `creatives_tracker_push_tokens` table
-(or log it in the app) and send a test push from https://expo.dev/notifications.
+Once the app runs as a development build, the token is logged in dev (`[push] Device push token: ...`)
+and stored in the `creatives_tracker_push_tokens` table. Send a test push to it with the Firebase
+console (Android) or a direct APNs request (iOS).
 
 ## 5. Web app (PWA): Web Push
 
-The installed web app can't use Expo push, so it subscribes through the browser's Web Push instead
+The installed web app can't use FCM/APNs device tokens, so it subscribes through the browser's Web Push instead
 (`src/lib/notifications.web.ts`, service worker `public/push-sw.js`). Same notifications, same
-`data`, sent alongside the Expo push by `ReviewerPush` in Artemis.
+`data`, sent alongside the FCM/APNs push by `ReviewerPush` in Artemis.
 
 | Endpoint | Body | Response |
 | --- | --- | --- |

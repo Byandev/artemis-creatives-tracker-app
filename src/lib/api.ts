@@ -1,4 +1,7 @@
-import type { AssignedCreative } from '@/lib/creatives';
+import { File } from 'expo-file-system';
+import { Platform } from 'react-native';
+
+import type { Creative, FinalStatus, Region, ReviewStatus } from '@/lib/creatives';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
 const TIMEOUT_MS = 15_000;
@@ -43,17 +46,19 @@ export async function apiRequest<T>(path: string, { method = 'GET', body, token 
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   const url = `${BASE_URL}/api/v1/creatives-tracker${path}`;
+  // FormData (file uploads) sets its own multipart Content-Type with the boundary.
+  const isForm = body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(url, {
       method,
       headers: {
         Accept: 'application/json',
-        'Content-Type': 'application/json',
+        ...(isForm ? {} : { 'Content-Type': 'application/json' }),
         ...TUNNEL_HEADERS,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
       signal: controller.signal,
     });
   } catch (error) {
@@ -112,12 +117,13 @@ export type AssignedCreativesParams = {
   cursor?: string | null;
 };
 
-/** Laravel cursor pagination, plus the total number of matching creatives. */
+/** Laravel cursor pagination, plus how many match and how many of those still need your review. */
 export type AssignedCreativesPage = {
-  data: AssignedCreative[];
+  data: Creative[];
   next_cursor: string | null;
   per_page: number;
   total: number;
+  to_review: number;
 };
 
 function toQuery(params: Record<string, string | number | null | undefined>) {
@@ -140,7 +146,69 @@ export const creativesApi = {
       })}`,
       { token },
     ),
+  show: (token: string, id: number) => apiRequest<{ data: Creative }>(`/creatives/${id}`, { token }),
+  /** Needs `permissions.update_final_status`. */
+  updateFinalStatus: (token: string, id: number, finalStatus: FinalStatus) =>
+    apiRequest<{ data: Creative }>(`/creatives/${id}/final-status`, {
+      method: 'PATCH',
+      body: { final_status: finalStatus },
+      token,
+    }),
+  /**
+   * Needs `permissions.review`. A status is required; feedback, a voice message, an area of the
+   * image (uploaded images only) and a second of the video (videos only) are optional.
+   */
+  review: async (token: string, id: number, input: ReviewInput) => {
+    if (!input.voice) {
+      const { status, feedback, region, timestampSeconds } = input;
+      return apiRequest<{ data: Creative }>(`/creatives/${id}/reviews`, {
+        method: 'POST',
+        body: { status, feedback, region: region ?? undefined, timestamp_seconds: timestampSeconds ?? undefined },
+        token,
+      });
+    }
+    const form = new FormData();
+    form.append('status', input.status);
+    if (input.feedback) form.append('feedback', input.feedback);
+    if (input.timestampSeconds != null) form.append('timestamp_seconds', String(input.timestampSeconds));
+    // Laravel reads region[x]… back into an array.
+    if (input.region) {
+      for (const [key, value] of Object.entries(input.region)) form.append(`region[${key}]`, String(value));
+    }
+    form.append('voice_duration_seconds', String(Math.round(input.voice.durationSeconds)));
+    await appendFile(form, 'voice', input.voice.uri, input.voice.mimeType);
+    return apiRequest<{ data: Creative }>(`/creatives/${id}/reviews`, { method: 'POST', body: form, token });
+  },
+  /** Only your own reviews (`review.can_delete`). Returns the creative without it. */
+  deleteReview: (token: string, id: number, reviewId: number) =>
+    apiRequest<{ data: Creative }>(`/creatives/${id}/reviews/${reviewId}`, { method: 'DELETE', token }),
 };
+
+export type ReviewInput = {
+  status: ReviewStatus;
+  feedback?: string;
+  /** A recording from the device: a file:// path on phones, a blob: URL on the web. */
+  voice?: { uri: string; mimeType: string; durationSeconds: number };
+  /** The area of the image the review points at. */
+  region?: Region | null;
+  /** The second of the video the review points at (video creatives only). */
+  timestampSeconds?: number | null;
+};
+
+const EXTENSIONS: Record<string, string> = { 'audio/webm': 'webm', 'audio/mp4': 'm4a', 'audio/ogg': 'ogg' };
+
+/** Adds a local file to a multipart form, the way each platform's fetch expects it. */
+async function appendFile(form: FormData, field: string, uri: string, mimeType: string) {
+  if (Platform.OS === 'web') {
+    const blob = await (await fetch(uri)).blob();
+    const type = blob.type || mimeType;
+    form.append(field, blob, `${field}.${EXTENSIONS[type.split(';')[0]] ?? 'webm'}`);
+    return;
+  }
+  // Expo's fetch (the global one since SDK 57) can't send React Native's `{ uri, name, type }`
+  // parts: it throws before the request goes out. A file-system `File` it reads itself.
+  form.append(field, new File(uri) as unknown as Blob);
+}
 
 /** Push token registration. Backend contract: docs/push-notifications-backend.md */
 export type PushTokenInput = {

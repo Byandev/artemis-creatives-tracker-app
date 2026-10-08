@@ -42,7 +42,14 @@
           "color": "#047857",
           "defaultChannel": "reviews"
         }
-      ]
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to use your microphone to record voice reviews."
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

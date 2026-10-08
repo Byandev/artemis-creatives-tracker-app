@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreativeRow } from '@/components/creatives/creative-row';
 import { CreativeListSkeleton } from '@/components/creatives/creative-row-skeleton';
+import { FinalStatusSheet } from '@/components/creatives/final-status-sheet';
 import { SearchBar } from '@/components/creatives/search-bar';
 import { TypeFilter, type TypeFilterValue } from '@/components/creatives/type-filter';
 import { ThemedText } from '@/components/themed-text';
@@ -14,6 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { useAssignedCreatives } from '@/hooks/use-assigned-creatives';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useTheme } from '@/hooks/use-theme';
+import type { Creative } from '@/lib/creatives';
 
 export default function CreativesScreen() {
   const insets = useSafeAreaInsets();
@@ -21,9 +23,10 @@ export default function CreativesScreen() {
   const [type, setType] = useState<TypeFilterValue>('all');
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
+  const [statusTarget, setStatusTarget] = useState<Creative | null>(null);
   const search = useDebouncedValue(query.trim());
 
-  const { items, total, error, isLoading, isRefreshing, isLoadingMore, refresh, loadMore, retry } =
+  const { items, total, toReview, error, isLoading, isRefreshing, isLoadingMore, refresh, loadMore, retry } =
     useAssignedCreatives({ search, format: type });
 
   // While a new search or format loads, show skeletons instead of the previous results.
@@ -118,15 +121,20 @@ export default function CreativesScreen() {
       <FlatList
         data={visible}
         keyExtractor={(creative) => String(creative.id)}
-        renderItem={({ item }) => <CreativeRow creative={item} />}
+        renderItem={({ item }) => (
+          <CreativeRow
+            creative={item}
+            onChangeStatus={item.permissions.update_final_status ? setStatusTarget : undefined}
+          />
+        )}
         ListHeaderComponent={
           visible.length > 0 ? (
             <View className="flex-row items-center gap-2 px-4 pb-2 pt-6">
               <ThemedText type="sectionLabel" tone="muted">
                 Needs review
               </ThemedText>
-              <ThemedText type="caption" tone="pending">
-                {total}
+              <ThemedText type="caption" tone={toReview > 0 ? 'pending' : 'approved'}>
+                {toReview > 0 ? `${toReview} of ${total} left` : 'All reviewed'}
               </ThemedText>
             </View>
           ) : null
@@ -148,6 +156,8 @@ export default function CreativesScreen() {
         keyboardDismissMode="on-drag"
         contentContainerClassName="pb-4"
       />
+
+      <FinalStatusSheet creative={statusTarget} onClose={() => setStatusTarget(null)} />
     </ThemedView>
   );
 }

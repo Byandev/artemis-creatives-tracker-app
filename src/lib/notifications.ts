@@ -1,4 +1,5 @@
 import { isRunningInExpoGo } from 'expo';
+import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import type * as NotificationsModule from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -54,7 +55,12 @@ export function pushUnsupportedReason(): string | null {
   if (isExpoGoAndroid) {
     return 'Expo Go on Android can’t receive push notifications. Use a development build.';
   }
+  if (!projectId()) return 'Notifications aren’t set up for this build yet (missing EAS project ID).';
   return null;
+}
+
+function projectId(): string | undefined {
+  return Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 }
 
 export type PermissionState = 'granted' | 'denied' | 'undetermined';
@@ -71,7 +77,7 @@ export async function isNotificationsEnabled() {
 }
 
 /**
- * Asks for permission, gets this device's native push token (FCM on Android, APNs on iOS) and sends it to Artemis.
+ * Asks for permission, gets this device's Expo push token and sends it to Artemis.
  * Throws an Error with a user-facing message if any step fails.
  */
 export async function enablePushNotifications(authToken: string) {
@@ -95,8 +101,9 @@ export async function enablePushNotifications(authToken: string) {
     throw new Error('Notifications are turned off for Artemis in your phone settings.');
   }
 
-  const { data: pushToken } = await Notifications.getDevicePushTokenAsync();
-  if (__DEV__) console.log(`[push] Device push token: ${pushToken}`);
+  const { data: pushToken } = await Notifications.getExpoPushTokenAsync({ projectId: projectId() });
+  // Dev only: copy this into https://expo.dev/notifications to send a test push before the backend is ready.
+  if (__DEV__) console.log(`[push] Expo push token: ${pushToken}`);
 
   try {
     await notificationsApi.registerToken(authToken, {
@@ -132,7 +139,7 @@ export async function disablePushNotifications(authToken: string | null) {
   }
 }
 
-/** Re-sends the token on launch: device push tokens can change, and the server may have dropped it. */
+/** Re-sends the token on launch: Expo push tokens can change, and the server may have dropped it. */
 export async function syncPushToken(authToken: string) {
   if (pushUnsupportedReason() || !(await isNotificationsEnabled())) return;
   if ((await getPermissionState()) !== 'granted') return;

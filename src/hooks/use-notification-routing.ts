@@ -6,15 +6,18 @@ import { loadNotifications, syncPushToken } from '@/lib/notifications';
 import { useSession } from '@/providers/session';
 
 function openFromNotification(response: NotificationResponse | null) {
-  const type = response?.notification.request.content.data?.type;
-  if (type === 'creative_assigned' || type === 'pending_reminder') {
+  const data = response?.notification.request.content.data;
+  const creativeId = Number(data?.creative_id);
+  if (data?.type === 'creative_assigned' && Number.isInteger(creativeId) && creativeId > 0) {
+    router.navigate({ pathname: '/creatives/[id]', params: { id: String(creativeId) } });
+  } else if (data?.type === 'creative_assigned' || data?.type === 'pending_reminder') {
     router.navigate('/');
   }
 }
 
 /**
- * While signed in: keeps this device's push token registered, and opens the Creatives tab
- * when a review notification is tapped (both "assigned" and "daily reminder" land there).
+ * While signed in: keeps this device's push token registered, and opens the right screen when
+ * a review notification is tapped: "assigned" opens that creative, "daily reminder" the list.
  * Does nothing where push isn't available (web, Expo Go on Android).
  */
 export function useNotificationRouting() {

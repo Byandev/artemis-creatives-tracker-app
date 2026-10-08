@@ -3,6 +3,7 @@ import { createContext, use, useCallback, useEffect, useState, type PropsWithChi
 
 import { ApiError, authApi, type User } from '@/lib/api';
 import { clearSession, loadSession, saveSession } from '@/lib/auth-storage';
+import { forgetCreatives } from '@/lib/creative-store';
 import { unregisterPushToken } from '@/lib/notifications';
 
 export type SignInInput = {
@@ -82,6 +83,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const signOut = useCallback(async () => {
     const current = token;
     await clearSession();
+    forgetCreatives();
     setToken(null);
     setUser(null);
     // Stop pushes to this phone, then revoke the token. Local sign-out already happened if these fail.

@@ -8,10 +8,14 @@ export default function Root({ children }: PropsWithChildren) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        {/* viewport-fit=cover lets safe-area insets work when installed to the home screen. */}
+        {/*
+          viewport-fit=cover lets safe-area insets work when installed to the home screen.
+          maximum-scale=1 stops iOS Safari zooming in when a field (under 16px text) is focused;
+          iOS still allows pinch zoom, so it doesn't lock anyone out.
+        */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+          content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
 
         {/* PWA */}
@@ -25,6 +29,8 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
         <ScrollViewStyleReset />
+        {/* No double-tap to zoom (iOS Safari): taps feel like an app's, with no zoom or delay. */}
+        <style dangerouslySetInnerHTML={{ __html: 'html, body { touch-action: manipulation; }' }} />
 
         {/* Only the production export ships a service worker (see `build:web`). */}
         {process.env.NODE_ENV === 'production' && (

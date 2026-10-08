@@ -27,6 +27,8 @@ const TONE_CLASSES = {
   pending: 'text-pending',
   approved: 'text-approved',
   rejected: 'text-rejected',
+  /** On photos and black backgrounds, in both themes. */
+  white: 'text-white',
 } as const;
 
 export type TextType = keyof typeof TYPE_CLASSES;

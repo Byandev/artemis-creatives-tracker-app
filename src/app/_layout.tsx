@@ -58,6 +58,7 @@ function RootNavigator() {
         </Stack.Protected>
         <Stack.Protected guard={!!token}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="creatives/[id]" />
         </Stack.Protected>
       </Stack>
       <AnimatedSplashOverlay />

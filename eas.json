@@ -19,6 +19,13 @@
       },
       "channel": "preview"
     },
+    "efb-development": {
+      "extends": "development",
+      "channel": "efb",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://efb.on-forge.com"
+      }
+    },
     "efb": {
       "distribution": "internal",
       "android": {

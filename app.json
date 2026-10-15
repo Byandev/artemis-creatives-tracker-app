@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "byandev",
     "name": "artemis-creatives-tracker",
     "slug": "artemis-creatives-tracker",
     "version": "1.0.0",

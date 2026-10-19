@@ -7,14 +7,38 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "preview"
+    },
+    "efb-development": {
+      "extends": "development",
+      "channel": "efb",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://efb.on-forge.com"
+      }
+    },
+    "efb": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "efb",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://efb.on-forge.com"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production"
     }
   },
   "submit": {

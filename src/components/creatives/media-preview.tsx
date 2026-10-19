@@ -209,7 +209,15 @@ function PlayingVideo({ uri, startAt, ref }: { uri: string; startAt: number; ref
 
   return (
     <View className={`${BOX} bg-black`}>
-      <VideoView player={player} nativeControls contentFit="contain" fullscreenOptions={{ enable: true }} style={{ flex: 1 }} />
+      {/* An explicit size, not flex: on the web the style goes straight onto the <video>, which
+          would otherwise grow to its own height and get cropped instead of letterboxed. */}
+      <VideoView
+        player={player}
+        nativeControls
+        contentFit="contain"
+        fullscreenOptions={{ enable: true }}
+        style={{ width: '100%', height: '100%' }}
+      />
       {status === 'loading' ? (
         <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
           <ActivityIndicator color="#ffffff" />

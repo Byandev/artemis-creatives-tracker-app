@@ -18,6 +18,16 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
 
+        {/* Link previews (Messenger, Slack, etc.). Previews need absolute URLs. The <title> is set in _layout. */}
+        <meta name="description" content={DESCRIPTION} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={TITLE} />
+        <meta property="og:title" content={TITLE} />
+        <meta property="og:description" content={DESCRIPTION} />
+        <meta property="og:url" content={`${WEB_URL}/`} />
+        <meta property="og:image" content={`${WEB_URL}/logo512.png`} />
+        <meta name="twitter:card" content="summary" />
+
         {/* PWA */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
@@ -41,6 +51,11 @@ export default function Root({ children }: PropsWithChildren) {
     </html>
   );
 }
+
+const TITLE = 'Artemis Creatives Tracker';
+const DESCRIPTION = 'Review and approve ad creatives from your phone.';
+// Where this build is hosted; set per deploy (see `EXPO_PUBLIC_WEB_URL` in the deploy command).
+const WEB_URL = (process.env.EXPO_PUBLIC_WEB_URL ?? 'https://artemis-creatives-tracker--efb.expo.app').replace(/\/+$/, '');
 
 const serviceWorker = `
 if ('serviceWorker' in navigator) {

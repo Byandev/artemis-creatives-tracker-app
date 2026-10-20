@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "byandev",
     "name": "artemis-creatives-tracker",
     "slug": "artemis-creatives-tracker",
     "version": "1.0.0",
@@ -42,7 +43,14 @@
           "color": "#047857",
           "defaultChannel": "reviews"
         }
-      ]
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to use your microphone to record voice reviews."
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -53,6 +61,12 @@
       "eas": {
         "projectId": "fe376c36-75e3-49ba-aa08-64c524c1bcdc"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/fe376c36-75e3-49ba-aa08-64c524c1bcdc"
     }
   }
 }

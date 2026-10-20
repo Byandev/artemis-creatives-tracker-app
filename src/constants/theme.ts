@@ -55,12 +55,12 @@ export const Colors = {
 
 export type ColorScheme = keyof typeof Colors;
 
-export type CreativeStatus = 'pending' | 'approved' | 'rejected';
+export type CreativeStatus = 'pending' | 'approved' | 'revision';
 
 export const StatusLabels: Record<CreativeStatus, string> = {
-  pending: 'Pending Review',
+  pending: 'Pending',
   approved: 'Approved',
-  rejected: 'Rejected',
+  revision: 'For Revision',
 };
 
 /**

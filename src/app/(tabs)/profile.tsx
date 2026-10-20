@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { Bell, ChevronRight, Clock, LogOut, Monitor, Moon, Sun, type LucideIcon } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Linking, Pressable, RefreshControl, ScrollView, Switch, View } from 'react-native';
+import { Linking, Platform, Pressable, RefreshControl, ScrollView, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -240,9 +240,13 @@ export default function ProfileScreen() {
           ) : notificationsError || (permissionDenied && !notificationsOn) ? (
             <View className="flex-row flex-wrap items-center gap-x-2">
               <ThemedText type="meta" tone="rejected">
-                {notificationsError ?? 'Notifications are turned off for Artemis in your phone settings.'}
+                {notificationsError ??
+                  (Platform.OS === 'web'
+                    ? 'Notifications are blocked for Artemis in your browser settings.'
+                    : 'Notifications are turned off for Artemis in your phone settings.')}
               </ThemedText>
-              {permissionDenied && (
+              {/* There's no way to open browser settings from a page. */}
+              {permissionDenied && Platform.OS !== 'web' && (
                 <Pressable accessibilityRole="link" onPress={() => Linking.openSettings()}>
                   <ThemedText type="label" tone="primary">
                     Open settings

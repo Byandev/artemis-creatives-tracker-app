@@ -8,6 +8,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/geist';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
+import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -58,6 +59,7 @@ function RootNavigator() {
         </Stack.Protected>
         <Stack.Protected guard={!!token}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="creatives/[id]" />
         </Stack.Protected>
       </Stack>
       <AnimatedSplashOverlay />
@@ -81,16 +83,22 @@ export default function RootLayout() {
   });
 
   // Keep the native splash up until Geist is ready.
-  if ((!fontsLoaded && !fontError) || !themeReady) {
-    return null;
-  }
+  const ready = (fontsLoaded || !!fontError) && themeReady;
 
   return (
-    <ThemeProvider value={navigationTheme(scheme)}>
-      <SessionProvider>
-        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <RootNavigator />
-      </SessionProvider>
-    </ThemeProvider>
+    <>
+      {/* Rendered even while loading, so the static web export gets the title (link previews read it). */}
+      <Head>
+        <title>Artemis Creatives Tracker</title>
+      </Head>
+      {ready && (
+        <ThemeProvider value={navigationTheme(scheme)}>
+          <SessionProvider>
+            <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+            <RootNavigator />
+          </SessionProvider>
+        </ThemeProvider>
+      )}
+    </>
   );
 }

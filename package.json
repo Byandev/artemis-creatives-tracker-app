@@ -53,7 +53,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "build:web": "expo export -p web && workbox generateSW workbox-config.js"
+    "build:web": "expo export -p web && workbox generateSW workbox-config.js",
+    "deploy:web:prod": "EXPO_PUBLIC_API_URL=https://artemis.ph EXPO_PUBLIC_WEB_URL=https://artemis-creatives-tracker.expo.app npm run build:web && npx eas-cli@latest deploy --prod"
   },
   "private": true
 }

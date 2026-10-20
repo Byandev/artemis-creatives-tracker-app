@@ -210,10 +210,12 @@ function PlayingVideo({ uri, startAt, ref }: { uri: string; startAt: number; ref
   return (
     <View className={`${BOX} bg-black`}>
       {/* An explicit size, not flex: on the web the style goes straight onto the <video>, which
-          would otherwise grow to its own height and get cropped instead of letterboxed. */}
+          would otherwise grow to its own height and get cropped instead of letterboxed.
+          playsInline keeps iPhone Safari from jumping straight to fullscreen on play. */}
       <VideoView
         player={player}
         nativeControls
+        playsInline
         contentFit="contain"
         fullscreenOptions={{ enable: true }}
         style={{ width: '100%', height: '100%' }}
